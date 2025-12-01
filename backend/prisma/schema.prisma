@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////
+// ENUM DEFINITIONS //
+//////////////////////
+
+enum RiskProfile {
+  Conservative
+  Balanced
+  Aggressive
+}
+
+enum RiskLevel {
+  Low
+  Moderate
+  High
+}
+
+enum InvestmentType {
+  SIP
+  LUMP_SUM
+}
+
+enum TransactionType {
+  SIP_INSTALLMENT
+  REDEMPTION
+}
+
+enum TxnStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  SKIPPED
+}
+
+//////////////////////
+// MODEL DEFINITIONS /
+//////////////////////
+
+model Users {
+  user_id      Int         @id @default(autoincrement())
+  name         String
+  email        String      @unique
+  password     String
+  risk_profile RiskProfile
+  created_at   DateTime    @default(now())
+
+  // Relations
+  investments     Investments[]
+  recommendations Recommendations[]
+  notifications   Notifications[]
+  refreshTokens   RefreshTokens[]
+  goals           Goals[]
+}
+
+model RefreshTokens {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  user Users @relation(fields: [user_id], references: [user_id])
+}
+
+model MutualFunds {
+  scheme_code    String     @id
+  fund_name      String
+  category       String
+  nav            Decimal    @db.Decimal(30, 10)
+  nav_updated_at DateTime   @default(now())
+  risk_level     RiskLevel?
+  rating_source  String?
+
+  investments  Investments[]
+  navhistories NAVHistory[]
+}
+
+model NAVHistory {
+  id          Int      @id @default(autoincrement())
+  scheme_code String
+  nav         Decimal  @db.Decimal(30, 10)
+  date        DateTime @default(now())
+
+  fund MutualFunds @relation(fields: [scheme_code], references: [scheme_code], onDelete: Cascade)
+}
+
+model Goals {
+  goal_id         Int      @id @default(autoincrement())
+  user_id         Int
+  name            String
+  target_amount   Decimal  @db.Decimal(20, 2)
+  target_date     DateTime
+  expected_return Decimal  @db.Decimal(6, 4) // annual rate, e.g. 0.12
+  calculated_sip  Decimal  @db.Decimal(20, 2) // monthly SIP to meet goal
+  created_at      DateTime @default(now())
+  note            String? // optional notes
+
+  user Users @relation(fields: [user_id], references: [user_id])
+
+  // optional: fetch linked investments
+  investments Investments[]
+}
+
+model Investments {
+  investment_id   Int            @id @default(autoincrement())
+  user_id         Int
+  scheme_code     String
+  investment_type InvestmentType
+  invested_amount Decimal        @db.Decimal(20, 8)
+  start_date      DateTime
+  frequency       String
+  duration_months Int?
+  units           Decimal?       @db.Decimal(20, 8)
+  current_value   Decimal?       @db.Decimal(20, 8)
+  goal_id         Int? // <-- optional FK
+  created_at      DateTime       @default(now())
+
+  user         Users          @relation(fields: [user_id], references: [user_id])
+  fund         MutualFunds    @relation(fields: [scheme_code], references: [scheme_code])
+  transactions Transactions[]
+
+  goal Goals? @relation(fields: [goal_id], references: [goal_id])
+}
+
+model Transactions {
+  txn_id        Int             @id @default(autoincrement())
+  investment_id Int
+  amount        Decimal         @db.Decimal(12, 2)
+  txn_date      DateTime
+  txn_type      TransactionType
+  status        TxnStatus       @default(PENDING)
+
+  // Relations
+  investment Investments @relation(fields: [investment_id], references: [investment_id])
+}
+
+model Recommendations {
+  recommendation_id Int      @id @default(autoincrement())
+  user_id           Int
+  data              Json
+  created_at        DateTime @default(now())
+
+  // Relations
+  user Users @relation(fields: [user_id], references: [user_id])
+}
+
+model Notifications {
+  notification_id Int      @id @default(autoincrement())
+  user_id         Int
+  message         String
+  is_read         Boolean  @default(false)
+  created_at      DateTime @default(now())
+
+  // Relations
+  user Users @relation(fields: [user_id], references: [user_id])
+}
