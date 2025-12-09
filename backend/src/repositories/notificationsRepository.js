@@ -8,7 +8,7 @@ export const NotificationsRepository = {
     getUserNotifications(user_id) {
         return prisma.notifications.findMany({
             where: { user_id },
-            orderBy: { created_at: "desc" }
+            orderBy: { notification_id: "asc" },
         });
     },
 

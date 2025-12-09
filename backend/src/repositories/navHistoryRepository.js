@@ -10,6 +10,7 @@ export const NAVHistoryRepository = {
             where: { scheme_code },
             orderBy: { date: "desc" },
             take: limit,
+            select: { date: true, nav: true },
         });
     },
 
@@ -23,6 +24,7 @@ export const NAVHistoryRepository = {
                 },
             },
             orderBy: { date: "asc" },
+            select: { date: true, nav: true },
         });
     },
 };

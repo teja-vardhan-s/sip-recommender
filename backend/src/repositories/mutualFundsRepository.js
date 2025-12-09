@@ -21,5 +21,17 @@ export const MutualFundsRepository = {
     // add more helpers (search, latestNav, bulkUpsert) as needed
     async findAll() {
         return prisma.mutualFunds.findMany();
+    },
+
+    async searchFunds(query) {
+        return prisma.mutualFunds.findMany({
+            where: {
+                OR: [
+                    { fund_name: { contains: query, mode: 'insensitive' } },
+                    { scheme_code: { contains: query, mode: 'insensitive' } }
+                ]
+            },
+            take: 20
+        });
     }
 };

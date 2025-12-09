@@ -1,5 +1,6 @@
 import { GoalsRepository } from "../repositories/goalsRepository.js";
 import { InvestmentRepository } from "../repositories/investmentRepository.js";
+import { NotificationService } from "./notificationService.js";
 
 // FV formula: FV = P * [((1+r)^n - 1) / r] * (1 + r)
 function projectedValue(monthly, annualRate, months) {
@@ -41,7 +42,7 @@ export const GoalProgressService = {
         );
 
         // 4️⃣ Actual corpus (sum of current_value from investments)
-        const investments = await InvestmentRepository.findUserInvestments(user_id);
+        const investments = await InvestmentRepository.findByUser(user_id);
 
         const actualCorpus = investments.reduce(
             (sum, inv) => sum + Number(inv.current_value || 0),
@@ -69,7 +70,7 @@ export const GoalProgressService = {
         if (status === "Behind") {
             await NotificationService.notify(
                 user_id,
-                `Your goal of ₹${target_amount} is behind schedule. Increase your SIP to stay on track.`
+                `Your goal of ₹${target_amount} for ${goal.name} is behind schedule. Increase your SIP to stay on track.`
             );
         }
 

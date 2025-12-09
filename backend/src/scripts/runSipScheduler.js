@@ -1,4 +1,11 @@
 import { SipSchedulerService } from "../services/sipSchedulerService.js";
+import dotenv from "dotenv";
+
+// Load .env.<NODE_ENV>, fallback to .env
+const envFile = `.env.${process.env.NODE_ENV || "development"}`;
+dotenv.config({ path: envFile });
+if (!process.env.DATABASE_URL) dotenv.config();
+
 
 console.log("Running SIP Auto Scheduler...");
 SipSchedulerService.runScheduler()

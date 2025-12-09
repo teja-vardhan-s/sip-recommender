@@ -18,6 +18,7 @@ import navHistoryRoutes from "./routes/navHistoryRoutes.js"
 import recommendationRoutes from './routes/recommendationRoutes.js';
 import goalProgressRoutes from "./routes/goalProgressRoutes.js"
 import notificationRoutes from "./routes/notificationRoutes.js"
+import fundRoutes from "./routes/fundRoutes.js"
 
 
 
@@ -59,23 +60,33 @@ if (process.env.ENABLE_CRON === "true") {
 
 const app = express();
 
-//middleware
-app.use(cors());
-app.use(express.json());
+const FRONTEND_ORIGIN = process.env.FRONTEND_URL || "http://localhost:5173";
+
+app.use(
+    cors({
+        origin: FRONTEND_ORIGIN,   // MUST be specific when using credentials
+        credentials: true,         // allows Access-Control-Allow-Credentials: true
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+    })
+);
+
 app.use(cookieParser());
+app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use("/api/sips/tracking", sipTrackingRoutes);
 app.use("/api/sips", sipsRoutes);
 app.use("/api/transactions", txnRoutes);
+app.use("/api/goals/progress", goalProgressRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/projections", projectionRoutes);
-app.use("/api/sips/tracking", sipTrackingRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/scheduler", sipSchedulerRoute);
 app.use("/api/nav", navHistoryRoutes);
 app.use("/api/recommendations", recommendationRoutes);
-app.use("/api/goals/progress", goalProgressRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/funds", fundRoutes); // fund related routes
 
 
 

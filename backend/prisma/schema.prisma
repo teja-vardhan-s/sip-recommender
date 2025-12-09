@@ -97,6 +97,9 @@ model NAVHistory {
   date        DateTime @default(now())
 
   fund MutualFunds @relation(fields: [scheme_code], references: [scheme_code], onDelete: Cascade)
+
+  @@index([scheme_code, date])
+  @@index([scheme_code])
 }
 
 model Goals {
@@ -129,6 +132,8 @@ model Investments {
   current_value   Decimal?       @db.Decimal(20, 8)
   goal_id         Int? // <-- optional FK
   created_at      DateTime       @default(now())
+  expected_return Decimal        @db.Decimal(5, 4)
+  is_active       Boolean        @default(true)
 
   user         Users          @relation(fields: [user_id], references: [user_id])
   fund         MutualFunds    @relation(fields: [scheme_code], references: [scheme_code])
@@ -144,6 +149,9 @@ model Transactions {
   txn_date      DateTime
   txn_type      TransactionType
   status        TxnStatus       @default(PENDING)
+  units         Decimal?        @db.Decimal(18, 6)
+  created_at    DateTime        @default(now())
+  processed_at  DateTime?
 
   // Relations
   investment Investments @relation(fields: [investment_id], references: [investment_id])

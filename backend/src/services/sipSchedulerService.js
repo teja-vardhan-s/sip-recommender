@@ -1,9 +1,9 @@
 import { InvestmentRepository } from "../repositories/investmentRepository.js";
 import { TransactionsRepository } from "../repositories/transactionsRepository.js";
 import { getNextSipDate } from "../utils/sipDates.js";
+import { NotificationService } from "./notificationService.js";
 
 export const SipSchedulerService = {
-
     async runScheduler() {
         const sips = await InvestmentRepository.findActiveSips();
 
@@ -11,13 +11,23 @@ export const SipSchedulerService = {
         let skipped = 0;
 
         for (const sip of sips) {
-            const { investment_id, start_date, invested_amount } = sip;
+            const { investment_id, start_date, invested_amount, frequency } = sip;
 
+            // find last installment (may be null)
             const lastTxn = await TransactionsRepository.findLastInstallment(investment_id);
-            const nextDue = getNextSipDate(start_date);
+
+            // compute next due using lastTxn and frequency
+            const nextDue = getNextSipDate(start_date, lastTxn, frequency ?? "Monthly");
 
             // If last transaction exists and is >= next due date -> skip
             if (lastTxn && new Date(lastTxn.txn_date) >= nextDue) {
+                skipped++;
+                continue;
+            }
+
+            // Ensure we don't create duplicate pending txns for same date:
+            const existing = await TransactionsRepository.findPendingForDate(investment_id, nextDue);
+            if (existing) {
                 skipped++;
                 continue;
             }
@@ -39,27 +49,28 @@ export const SipSchedulerService = {
             scheduled,
             skipped,
         };
-    }
+    },
 };
 
 export const SipNotificationService = {
-
     async notifyDueSIPs() {
         const sips = await InvestmentRepository.findActiveSips();
-
         let count = 0;
+
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0, 0, 0, 0);
 
         for (const sip of sips) {
-            const next = getNextSipDate(sip.start_date);
-            const nextDateOnly = new Date(next.setHours(0, 0, 0, 0));
+            const lastTxn = await TransactionsRepository.findLastInstallment(sip.investment_id);
+            const next = getNextSipDate(sip.start_date, lastTxn, sip.frequency ?? "Monthly");
+            const nextDateOnly = new Date(next);
+            nextDateOnly.setHours(0, 0, 0, 0);
 
             if (nextDateOnly.getTime() === tomorrow.getTime()) {
                 await NotificationService.notify(
                     sip.user_id,
-                    `Your SIP of ₹${sip.invested_amount} for ${sip.fund_name} is due tomorrow.`
+                    `Your SIP of ₹${sip.invested_amount} for ${sip.fund_name ?? sip.fund_name} is due tomorrow.`
                 );
                 count++;
             }
@@ -68,32 +79,25 @@ export const SipNotificationService = {
         return { dueTomorrow: count };
     },
 
-
     async notifyMissedSIPs() {
         const sips = await InvestmentRepository.findActiveSips();
-
         let count = 0;
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         for (const sip of sips) {
-            const lastTxn = await prisma.transactions.findFirst({
-                where: {
-                    investment_id: sip.investment_id,
-                    txn_type: "SIP_INSTALLMENT"
-                },
-                orderBy: { txn_date: "desc" }
-            });
+            const lastTxn = await TransactionsRepository.findLastInstallment(sip.investment_id);
+            const nextDue = getNextSipDate(sip.start_date, lastTxn, sip.frequency ?? "Monthly");
+            const dueDateOnly = new Date(nextDue);
+            dueDateOnly.setHours(0, 0, 0, 0);
 
-            const nextDue = getNextSipDate(sip.start_date);
-            const dueDateOnly = new Date(nextDue.setHours(0, 0, 0, 0));
-
-            // If today is the due date but transaction status is NOT PAID
+            // If today is the due date but last transaction isn't SUCCESS
             if (dueDateOnly.getTime() === today.getTime()) {
-                if (!lastTxn || lastTxn.status !== "PAID") {
+                if (!lastTxn || lastTxn.status !== "SUCCESS") {
                     await NotificationService.notify(
                         sip.user_id,
-                        `Your SIP of ₹${sip.invested_amount} for ${sip.fund_name} was missed today.`
+                        `Your SIP of ₹${sip.invested_amount} for ${sip.fund_name ?? sip.fund_name} was missed today.`
                     );
                     count++;
                 }
@@ -101,5 +105,5 @@ export const SipNotificationService = {
         }
 
         return { missedToday: count };
-    }
+    },
 };

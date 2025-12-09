@@ -62,6 +62,7 @@ export const SipService = {
             goal_id,
             units: 0,
             expected_return: fundReturn,
+            is_active: true,
         };
 
         // create investment

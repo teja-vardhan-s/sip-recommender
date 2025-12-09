@@ -7,18 +7,16 @@ import { ERROR_CODES } from '../utils/errorCodes.js';
 import { AuthService } from '../services/authService.js';
 
 // ---------- Config ----------
-const ACCESS_TOKEN_EXPIRES = process.env.ACCESS_TOKEN_EXPIRES || "15m";
 const REFRESH_TOKEN_EXPIRES_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRES_DAYS || 7);
 const REFRESH_COOKIE_NAME = process.env.REFRESH_COOKIE_NAME || "refreshToken";
 
 function cookieOptions() {
-    const secure = process.env.NODE_ENV === "production";
     return {
         httpOnly: true,
-        secure,
-        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        path: "/",
         maxAge: REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-        path: "/"
     };
 }
 
@@ -87,7 +85,11 @@ export const logout = async (req, res, next) => {
     try {
         const token = req.cookies?.[REFRESH_COOKIE_NAME];
         await AuthService.logout(token);
-        res.clearCookie(REFRESH_COOKIE_NAME);
+        res.clearCookie(REFRESH_COOKIE_NAME, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+        });
         return res.json({ success: true });
     } catch (err) {
         return next(err instanceof AppError ? err : new AppError(ERROR_CODES.SERVER_ERROR, err.message));

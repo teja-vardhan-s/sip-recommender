@@ -5,6 +5,11 @@ import prisma from '../prismaClient.js';
  * Keeps Prisma usage in one place so controllers/services remain testable.
  */
 export const TransactionsRepository = {
+
+    async create(data) {
+        return prisma.transactions.create({ data });
+    },
+
     async findByUserWithFilters(user_id, status, type) {
         return prisma.transactions.findMany({
             where: {
@@ -59,23 +64,28 @@ export const TransactionsRepository = {
         });
     },
 
-    async updateInvestmentTotals(investment_id, unitsToAdd, amountToAdd) {
+    // DO NOT MODIFY invested_amount here. It represents configured SIP amount.
+    async updateInvestmentTotals(investment_id, unitsBought, amount) {
         return prisma.investments.update({
             where: { investment_id },
             data: {
-                units: { increment: unitsToAdd },
-                invested_amount: { increment: amountToAdd },
+                units: { increment: unitsBought }
             },
+            include: {
+                fund: true,
+                transactions: {
+                    orderBy: { txn_date: "desc" },
+                    take: 10
+                }
+            }
         });
     },
 
-    findLastInstallment(investment_id) {
+    // last SIP_INSTALLMENT txn (desc)
+    async findLastInstallment(investment_id) {
         return prisma.transactions.findFirst({
-            where: {
-                investment_id,
-                txn_type: "SIP_INSTALLMENT"
-            },
-            orderBy: { txn_date: "desc" }
+            where: { investment_id, txn_type: "SIP_INSTALLMENT" },
+            orderBy: { txn_date: "desc" },
         });
     },
 
@@ -87,4 +97,28 @@ export const TransactionsRepository = {
             data: { status: 'PENDING' },
         });
     },
+
+    // find pending txn for exact date (day-range)
+    async findPendingForDate(investment_id, date) {
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(date);
+        end.setHours(23, 59, 59, 999);
+
+        return prisma.transactions.findFirst({
+            where: {
+                investment_id,
+                status: "PENDING",
+                txn_date: { gte: start, lte: end },
+            },
+        });
+    },
+
+    // find nav history for scheme on date (used by updateTxn you already have)
+    async findNavHistoryForSchemeOnDate(scheme_code, start, end) {
+        return prisma.nAVHistory.findFirst({
+            where: { scheme_code, date: { gte: start, lte: end } },
+            orderBy: { date: "desc" },
+        });
+    }
 };

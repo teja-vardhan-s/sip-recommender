@@ -1,5 +1,6 @@
 import { PortfolioService } from "../services/portfolioService.js";
 import AppError from "../utils/AppError.js";
+import { ERROR_CODES } from "../utils/errorCodes.js";
 
 export const PortfolioController = {
     async getSummary(req, res, next) {
