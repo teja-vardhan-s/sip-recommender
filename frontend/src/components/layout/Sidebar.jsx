@@ -26,9 +26,6 @@ export default function Sidebar({ collapsed, toggleCollapse }) {
   const nav = useNavigate();
   const { logout } = useAuth();
   const location = useLocation();
-  const [projOpen, setProjOpen] = useState(
-    location.pathname.startsWith("/projections")
-  );
 
   // simple helper to mark active nav items
   const isActive = (path) =>

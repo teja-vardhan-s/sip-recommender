@@ -1,24 +1,9 @@
-import jwt from 'jsonwebtoken';
-import argon2 from 'argon2';
-import prisma from '../prismaClient.js';
 import { z } from 'zod';
 import AppError from '../utils/AppError.js';
 import { ERROR_CODES } from '../utils/errorCodes.js';
 import { AuthService } from '../services/authService.js';
+import { REFRESH_COOKIE_NAME, cookieOptions } from "../utils/cookies.js";
 
-// ---------- Config ----------
-const REFRESH_TOKEN_EXPIRES_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRES_DAYS || 7);
-const REFRESH_COOKIE_NAME = process.env.REFRESH_COOKIE_NAME || "refreshToken";
-
-function cookieOptions() {
-    return {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        path: "/",
-        maxAge: REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-    };
-}
 
 // ---------- Validation schemas ----------
 const signupSchema = z.object({
@@ -70,13 +55,30 @@ export const login = async (req, res, next) => {
 
 export const refresh = async (req, res, next) => {
     try {
+        // read cookie safely
+        console.log("Cookies received:", req.cookies);
         const token = req.cookies?.[REFRESH_COOKIE_NAME];
+
+
+        // call service (service will throw AppError with appropriate code/message)
         const result = await AuthService.refresh(token);
 
-        // AuthService.refresh returns { accessToken, refreshToken, expires_at, user }
+        // rotate cookie (new refresh token)
         res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, cookieOptions());
-        return res.json({ accessToken: result.accessToken });
+
+        // return access token and (optionally) user info
+        return res.json({
+            success: true,
+            accessToken: result.accessToken,
+            user: result.user ? {
+                user_id: result.user.user_id ?? result.user.id,
+                name: result.user.name ?? null,
+                email: result.user.email ?? null,
+                risk_profile: result.user.risk_profile ?? null,
+            } : undefined,
+        });
     } catch (err) {
+        // Ensure AppError bubbles to your error middleware with correct code/status
         return next(err instanceof AppError ? err : new AppError(ERROR_CODES.SERVER_ERROR, err.message));
     }
 };

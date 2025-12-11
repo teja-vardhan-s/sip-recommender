@@ -17,6 +17,7 @@ export default function GoalProgressCard({ goal, onClose }) {
   const [progress, setProgress] = useState(null);
   const [projection, setProjection] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isTied, setIsTied] = useState(true);
 
   // Colors for charts
   const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444"];
@@ -56,6 +57,16 @@ export default function GoalProgressCard({ goal, onClose }) {
       setProjection(proj);
     } catch (e) {
       console.error("Goal progress load error", e);
+      console.error(" Full error:", e.response);
+      if (
+        e.response &&
+        e.response.data &&
+        e.response.data.error &&
+        e.response.data.error.message === "Invalid monthly investment"
+      ) {
+        console.error(" Likely cause: Goal has zero monthly investment set.");
+        setIsTied(false);
+      }
       setProgress(null);
       setProjection(null);
     } finally {
@@ -68,7 +79,17 @@ export default function GoalProgressCard({ goal, onClose }) {
   }, [goal]);
 
   if (loading) return <div>Loading progress...</div>;
-  if (!progress) return <div>Failed to fetch progress</div>;
+  if (!progress) {
+    if (!isTied) {
+      return (
+        <div>
+          No progress data available. Ensure the goal has a valid monthly
+          investment set.
+        </div>
+      );
+    }
+    return <div>Failed to fetch progress</div>;
+  }
 
   return (
     <div className="p-4 bg-white rounded shadow">
@@ -136,12 +157,13 @@ export default function GoalProgressCard({ goal, onClose }) {
                   data={[
                     {
                       name: "Projected",
-                      value: projection.projected_corpus,
+                      value: Math.round(projection.projected_corpus),
                     },
                     {
                       name: "Remaining Gap",
                       value: Math.max(
-                        projection.target_amount - projection.projected_corpus,
+                        Math.round(projection.target_amount) -
+                          Math.round(projection.projected_corpus),
                         0
                       ),
                     },
@@ -171,7 +193,7 @@ export default function GoalProgressCard({ goal, onClose }) {
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={projection.breakdown}>
                   <XAxis dataKey="scheme_code" />
-                  <YAxis />
+                  <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend />
                   <Bar

@@ -27,7 +27,6 @@ export const GoalsRepository = {
         });
     },
 
-    // for later use
     async deleteById(goal_id) {
         return prisma.goals.delete({ where: { goal_id } });
     },

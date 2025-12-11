@@ -31,10 +31,21 @@ export const AuthRepository = {
         return prisma.refreshTokens.deleteMany({ where: { token } });
     },
 
-    async replaceRefreshToken(oldToken, newToken, expires_at) {
-        return prisma.refreshTokens.update({
+    /**
+   * Attempt to atomically replace an existing token's value.
+   * Returns the number of rows affected (0 or 1).
+   */
+    replaceRefreshToken(oldToken, newToken, expires_at) {
+        return prisma.refreshTokens.updateMany({
             where: { token: oldToken },
-            data: { token: newToken, expires_at }
+            data: { token: newToken, expires_at },
+        }); // returns { count }
+    },
+
+    async findLatestRefreshTokenForUser(user_id) {
+        return prisma.refreshTokens.findFirst({
+            where: { user_id },
+            orderBy: { created_at: "desc" },
         });
     }
 };

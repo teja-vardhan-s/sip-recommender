@@ -55,10 +55,12 @@ export const updateSip = async (req, res, next) => {
         const investment_id = Number(req.params.id);
 
         // only accept allowed fields from client; block start_date and fund changes in controller
-        const { invested_amount, frequency, duration_months } = req.body;
+        const { invested_amount, frequency, duration_months, goal_id } = req.body;
 
         const inv = await InvestmentRepository.findById(investment_id);
-        if (!inv || inv.user_id !== user_id) return next(new AppError(ERROR_CODES.NOT_FOUND, "SIP not found"));
+        if (!inv || inv.user_id !== user_id) {
+            return next(new AppError(ERROR_CODES.NOT_FOUND, "SIP not found"));
+        }
 
         // block changing start_date, scheme, etc.
         if (req.body.start_date || req.body.scheme_code) {

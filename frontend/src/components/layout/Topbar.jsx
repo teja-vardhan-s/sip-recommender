@@ -1,13 +1,11 @@
 import { Menu, LogOut } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import NotificationBell from "../notifications/NotificationBell.jsx";
 
 export default function Topbar({ onMenuClick }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const nav = useNavigate();
-  const [open, setOpen] = useState(false);
 
   return (
     <header className="h-14 bg-white border-b flex items-center justify-between px-4">

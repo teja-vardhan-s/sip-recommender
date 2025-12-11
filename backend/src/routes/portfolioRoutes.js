@@ -5,5 +5,6 @@ import { PortfolioController } from "../controllers/portfolioController.js";
 const router = express.Router();
 
 router.get("/summary", authenticateJWT, PortfolioController.getSummary);
+router.get("/report", authenticateJWT, PortfolioController.getReport);
 
 export default router;

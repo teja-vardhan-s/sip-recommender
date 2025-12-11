@@ -36,6 +36,17 @@ export const InvestmentRepository = {
         });
     },
 
+    async findByGoal(goal_id) {
+        return prisma.investments.findMany({
+            where: { goal_id },
+            include: {
+                fund: true,
+                transactions: { orderBy: { txn_date: 'desc' } }
+            },
+            orderBy: { created_at: "desc" }
+        });
+    },
+
     async updateById(investment_id, data) {
         return prisma.investments.update({ where: { investment_id }, data });
     },
@@ -58,12 +69,10 @@ export const InvestmentRepository = {
         }
 
         if (Object.keys(payload).length === 0) {
-            // nothing to change
             return this.findById(investment_id);
         }
 
         return prisma.$transaction(async (tx) => {
-            // read current investment (optional, for logging/decisions)
             const current = await tx.investments.findUnique({ where: { investment_id } });
 
             // 1) update investment

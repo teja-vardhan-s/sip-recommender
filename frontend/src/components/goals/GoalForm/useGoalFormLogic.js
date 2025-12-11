@@ -211,7 +211,7 @@ export default function useGoalFormLogic({ isEditing = false, goal_id = null, on
 
             let goalResp = null;
             if (isEditing && goal_id) {
-                goalResp = await api.put(`/goals/${goal_id}`, payloadForGoal);
+                goalResp = await api.patch(`/goals/${goal_id}`, payloadForGoal);
                 onUpdated?.();
             } else {
                 goalResp = await api.post("/goals", payloadForGoal);

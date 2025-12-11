@@ -18,7 +18,6 @@ export const MutualFundsRepository = {
         return prisma.mutualFunds.findUnique({ where: { id } });
     },
 
-    // add more helpers (search, latestNav, bulkUpsert) as needed
     async findAll() {
         return prisma.mutualFunds.findMany();
     },

@@ -21,7 +21,7 @@ import notificationRoutes from "./routes/notificationRoutes.js"
 import fundRoutes from "./routes/fundRoutes.js"
 
 
-
+// Cron Jobs
 import cron from "node-cron";
 import { syncFundsFromAMFI } from "./scripts/fundSync.js";
 import { SipSchedulerService, SipNotificationService } from './services/sipSchedulerService.js';
@@ -29,18 +29,27 @@ import { SipSchedulerService, SipNotificationService } from './services/sipSched
 if (process.env.ENABLE_CRON === "true") {
     // Runs daily at 22:00 (10:00 PM) server local time — sync funds from AMFI
     cron.schedule("0 22 * * *", async () => {
-        console.log("Running daily fund sync...");
-        await syncFundsFromAMFI();
-    });
+        try {
+            console.log("Running daily fund sync...");
+            await syncFundsFromAMFI();
+            console.log("Fund sync complete.");
+        } catch (error) {
+            console.error("Fund sync failed:", error);
+        }
+    }, { timezone: "Asia/Kolkata" });
 }
 
 if (process.env.ENABLE_CRON === "true") {
     // Runs daily at 01:00 (1:00 AM) server local time — run SIP auto-scheduler
     cron.schedule("0 1 * * *", async () => {
-        console.log("⏳ Running SIP Auto Scheduler...");
-        const result = await SipSchedulerService.runScheduler();
-        console.log("✅ SIP auto-scheduler complete:", result);
-    });
+        try {
+            console.log("⏳ Running SIP Auto Scheduler...");
+            const result = await SipSchedulerService.runScheduler();
+            console.log("SIP auto-scheduler complete:", result);
+        } catch (error) {
+            console.error("SIP auto-scheduler failed:", error);
+        }
+    }, { timezone: "Asia/Kolkata" });
 }
 
 
@@ -48,15 +57,55 @@ if (process.env.ENABLE_CRON === "true") {
 
     // 7 AM → Notify SIP due tomorrow
     cron.schedule("0 7 * * *", async () => {
-        await SipNotificationService.notifyDueSIPs();
-    });
+        try {
+            console.log("Notifying due SIPs for tomorrow...");
+            const res = await SipNotificationService.notifyDueSIPs();
+            console.log("SIP due notifications sent:", res);
+        } catch (error) {
+            console.error("Error notifying due SIPs:", error);
+        }
+    }, { timezone: "Asia/Kolkata" });
+
+    // 3 PM → Notify due SIPs (retry)
+    cron.schedule("0 15 * * *", async () => {
+        try {
+            console.log("Retrying notifications for due SIPs...");
+            const res = await SipNotificationService.notifyDueSIPs();
+            console.log("Retry notifications sent:", res);
+        } catch (error) {
+            console.error("Error retrying notifications for due SIPs:", error);
+        }
+    }, { timezone: "Asia/Kolkata" });
 
     // 11 PM → Notify missed SIPs
     cron.schedule("0 23 * * *", async () => {
-        await SipNotificationService.notifyMissedSIPs();
-    });
+        try {
+            console.log("Notifying missed SIPs...");
+            const res = await SipNotificationService.notifyMissedSIPs();
+            console.log("Missed SIP notifications sent:", res);
+        } catch (error) {
+            console.error("Error notifying missed SIPs:", error);
+        }
+    }, { timezone: "Asia/Kolkata" });
 }
 
+// monthly reports: run at 02:00 on day 1 of every month
+cron.schedule("0 2 1 * *", async () => {
+    console.log("Generating monthly portfolio reports...");
+    const users = await UserRepository.findAllActiveUsers();
+    for (const u of users) {
+        try {
+            const summary = await PortfolioService.getSummary(u.user_id);
+            await EmailService.generateAndEmailPortfolioReport({ user: u, summary });
+            console.log("Sent report to", u.email);
+        } catch (e) {
+            console.error("Failed to send report for user", u.user_id, e);
+        }
+    }
+});
+
+
+// Express app setup
 
 const app = express();
 

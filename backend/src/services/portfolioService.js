@@ -27,7 +27,7 @@ async function buildMonthlyHistory(investments, monthsBack = 12) {
 
     // Fetch NAV history for each scheme (take monthsBack*31 days approx)
     const navCache = {};
-    const daysToFetch = Math.max(90, monthsBack * 31);
+    const daysToFetch = monthsBack * 31;
     for (const scheme of Object.keys(schemes)) {
         const navs = await NAVHistoryRepository.getForScheme(scheme, daysToFetch);
         // sort ascending by date (oldest first)
@@ -76,11 +76,18 @@ export const PortfolioService = {
 
         const categoryMap = {}; // { Equity: x, Debt: y, Hybrid: z }
 
+        /*
+        ON_TRACK - SIPs executing normally
+        DELAYED - Missing 1 month
+        OFF_TRACK - Missing 2+ months
+        FAILED - Has failed/skipped transactions (highest priority alert)
+        */
         const sipSummary = {
             total: investments.length,
             onTrack: 0,
             delayed: 0,
             offTrack: 0,
+            failed: 0,
         };
 
         const detailed = [];
@@ -115,9 +122,15 @@ export const PortfolioService = {
                 transactions: txns,
             });
 
-            if (sipStatus.status === "ON_TRACK") sipSummary.onTrack++;
-            else if (sipStatus.status === "DELAYED") sipSummary.delayed++;
-            else sipSummary.offTrack++;
+            if (sipStatus.status === "FAILED") {
+                sipSummary.failed++;
+            } else if (sipStatus.status === "ON_TRACK") {
+                sipSummary.onTrack++;
+            } else if (sipStatus.status === "DELAYED") {
+                sipSummary.delayed++;
+            } else if (sipStatus.status === "OFF_TRACK") {
+                sipSummary.offTrack++;
+            }
 
             //  Push detailed SIP breakdown
             detailed.push({

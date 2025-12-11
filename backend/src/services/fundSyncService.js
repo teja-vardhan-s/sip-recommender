@@ -5,7 +5,7 @@ import { normalizeCategory } from "../utils/normalizeCategory.js";
 export const FundSyncService = {
 
     async sync() {
-        console.log("📥 Fetching AMFI fund list...");
+        console.log(" Fetching AMFI fund list...");
 
         const { data } = await axios.get(
             "https://www.amfiindia.com/spages/NAVAll.txt",
@@ -48,7 +48,7 @@ export const FundSyncService = {
             count++;
         }
 
-        console.log(`✅ Fund sync complete: ${count} funds processed.`);
+        console.log(`Fund sync complete: ${count} funds processed.`);
         return count;
     },
 

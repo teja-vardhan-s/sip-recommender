@@ -35,8 +35,7 @@ function authMiddleware(req, res, next) {
                 return next(
                     new AppError(
                         ERROR_CODES.TOKEN_EXPIRED,
-                        "ACCESS_TOKEN_EXPIRED - "
-                            `Expired at ${err.expiredAt}`
+                        "ACCESS_TOKEN_EXPIRED - Expired at " + err.expiredAt
                     )
                 );
             }

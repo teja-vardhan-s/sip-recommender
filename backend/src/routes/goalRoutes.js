@@ -10,7 +10,6 @@ router.post("/", authMiddleware, createGoal);
 router.get("/", authMiddleware, getGoals);
 router.post("/:id/create-sip", authMiddleware, createSip);
 router.get("/:id", authMiddleware, getGoalById);
-router.put("/:id", authMiddleware, updateGoal);
 router.patch("/:id", authMiddleware, updateGoal);
 router.delete("/:id", authMiddleware, deleteGoal);
 

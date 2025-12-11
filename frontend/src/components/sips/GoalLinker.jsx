@@ -21,7 +21,6 @@ export default function GoalLinker({ sip, onUpdated }) {
       setError(null);
       try {
         const res = await api.get("/goals");
-        // backend may return { data: [...] } or { goals: [...] } or array directly
         const arr = res.data?.data ?? res.data?.goals ?? res.data ?? [];
 
         if (cancelled) return;
@@ -87,8 +86,8 @@ export default function GoalLinker({ sip, onUpdated }) {
     setError(null);
 
     try {
-      // backend: PUT /api/sips/:id expects fields that can include goal_id (nullable)
-      await api.put(`/sips/${sipId}`, { goal_id: selectedGoalId ?? null });
+      // backend: PATCH /api/sips/:id expects fields that can include goal_id (nullable)
+      await api.patch(`/sips/${sipId}`, { goal_id: selectedGoalId ?? null });
       // refresh sip details
       await onUpdated?.();
     } catch (err) {

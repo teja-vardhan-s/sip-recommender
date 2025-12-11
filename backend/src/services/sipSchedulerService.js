@@ -2,6 +2,8 @@ import { InvestmentRepository } from "../repositories/investmentRepository.js";
 import { TransactionsRepository } from "../repositories/transactionsRepository.js";
 import { getNextSipDate } from "../utils/sipDates.js";
 import { NotificationService } from "./notificationService.js";
+import prisma from "../prismaClient.js";
+import { EmailService } from "./emailService.js";
 
 export const SipSchedulerService = {
     async runScheduler() {
@@ -72,6 +74,14 @@ export const SipNotificationService = {
                     sip.user_id,
                     `Your SIP of ₹${sip.invested_amount} for ${sip.fund_name ?? sip.fund_name} is due tomorrow.`
                 );
+                const user = await prisma.users.findUnique({ where: { user_id: sip.user_id } });
+                if (user?.email) {
+                    await EmailService.sendSimpleEmail({
+                        to: user.email,
+                        subject: "SIP due tomorrow",
+                        html: `<p>Your SIP of ₹${sip.invested_amount} for ${sip.fund_name} is due tomorrow.</p>`
+                    });
+                }
                 count++;
             }
         }

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthProvider.jsx";
+import RedirectIfLoggedIn from "./auth/RedirectIfLoggedIn.jsx";
 
 import Layout from "./components/layout/Layout.jsx";
 import ProtectedRoute from "./auth/ProtectedRoute.jsx";
@@ -13,18 +14,26 @@ import RecommendationsPage from "./pages/RecommendationsPage.jsx";
 import NotificationsPage from "./pages/NotificationsPage.jsx";
 import NavHistoryPage from "./pages/NavHistoryPage.jsx";
 
-function Protected({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-}
-
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/signup"
+          element={
+            <RedirectIfLoggedIn>
+              <Signup />
+            </RedirectIfLoggedIn>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <RedirectIfLoggedIn>
+              <Login />
+            </RedirectIfLoggedIn>
+          }
+        />
 
         <Route
           path="/"

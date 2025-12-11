@@ -23,6 +23,7 @@ export default function SipHealthBar({ sipSummary }) {
       OnTrack: sipSummary?.onTrack ?? 0,
       Delayed: sipSummary?.delayed ?? 0,
       OffTrack: sipSummary?.offTrack ?? 0,
+      Failed: sipSummary?.failed ?? 0,
     },
   ];
   if (!mounted) {
@@ -41,6 +42,7 @@ export default function SipHealthBar({ sipSummary }) {
           <Bar dataKey="OnTrack" stackId="a" fill="#10B981" />
           <Bar dataKey="Delayed" stackId="a" fill="#F59E0B" />
           <Bar dataKey="OffTrack" stackId="a" fill="#EF4444" />
+          <Bar dataKey="Failed" stackId="a" fill="#8B5CF6" />
         </BarChart>
       </ResponsiveContainer>
     </div>

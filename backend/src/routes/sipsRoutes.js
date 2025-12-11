@@ -9,7 +9,6 @@ router.post("/", authMiddleware, createSip);
 router.get("/", authMiddleware, getSips);
 router.get("/:id", authMiddleware, getSipById);
 router.patch("/:id", authMiddleware, updateSip);
-router.put("/:id", authMiddleware, updateSip);
 router.patch("/:id/stop", authMiddleware, stopSip);
 router.patch("/:id/start", authMiddleware, startSip);
 

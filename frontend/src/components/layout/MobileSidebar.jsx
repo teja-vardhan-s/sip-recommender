@@ -41,18 +41,11 @@ export default function MobileSidebar({ open, close }) {
             Goals
           </Link>
           <Link
-            to="/projections"
+            to="/recommendations"
             onClick={close}
             className="block p-2 rounded hover:bg-slate-100"
           >
-            Projections
-          </Link>
-          <Link
-            to="/notifications"
-            onClick={close}
-            className="block p-2 rounded hover:bg-slate-100"
-          >
-            Notifications
+            Recommendations
           </Link>
         </div>
       </div>
